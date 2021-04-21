@@ -1,0 +1,13 @@
+{
+  "name": "jp.bexide.lib.missingfinder",
+  "displayName": "Missing Finder",
+  "description": "Missing Reference detection tool",
+  "version": "1.0.0",
+  "unity": "2020.3",
+  "license": "",
+  "author": "BeXide, Inc.",
+  "category": "BX-lib",
+  "dependencies": {
+    "com.unity.editorcoroutines": "1.0.0"
+  }
+}
