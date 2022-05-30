@@ -7,6 +7,9 @@
   "license": "",
   "author": "BeXide, Inc.",
   "category": "BX-lib",
+  "publishConfig": {
+    "registry": "https://verdaccio.bomber.co.jp"
+  },
   "dependencies": {
     "com.unity.editorcoroutines": "1.0.0"
   }
