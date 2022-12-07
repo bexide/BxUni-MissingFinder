@@ -47,16 +47,24 @@ namespace BxUni
         {
             MissingList.Clear();
 
-            // 全てのアセットのファイルパスを取得  
-            string[] allPaths = AssetDatabase.GetAllAssetPaths();
-            int      length   = allPaths.Length;
+            var selections = Selection.GetFiltered<Object>(SelectionMode.Assets);
+            
+            string[] paths = selections.Length <= 0
+                ? AssetDatabase.GetAllAssetPaths()
+                : selections.Select(AssetDatabase.GetAssetPath).ToArray();
 
+            SearchOnPath(paths);
+        }
+        
+        private void SearchOnPath(string[] allPaths)
+        {
+            int length = allPaths.Length;
             for (int i = 0; i < length; i++)
             {
                 // プログレスバーを表示
                 if (EditorUtility.DisplayCancelableProgressBar(
                         "Search Missing",
-                        string.Format("{0}/{1}", i + 1, length),
+                        $"{i + 1}/{length}",
                         (float)i / length)) { break; }
 
                 // Missing状態のプロパティを検索  
@@ -97,8 +105,6 @@ namespace BxUni
 
                 while (property.Next(true))
                 {
-                    // プロパティの種類がオブジェクト（アセット）への参照で、  
-                    // その参照がnullなのにもかかわらず、参照先インスタンスIDが0でないものはMissing状態！  
                     if (IsMissing(property))
                     {
                         Debug.Log($"{path}:\t{property.propertyPath}");
