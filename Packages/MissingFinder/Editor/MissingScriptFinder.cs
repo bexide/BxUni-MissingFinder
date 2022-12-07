@@ -30,7 +30,7 @@ namespace BxUni
 
         private Vector2 m_scrollPos;
 
-        [MenuItem("BeXide/Missing Script Finder")]
+        [MenuItem("BeXide/Missing Finder/Missing Script Finder")]
         private static void ShowMissingList()
         {
             // ウィンドウを表示  
