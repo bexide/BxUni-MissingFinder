@@ -24,20 +24,12 @@ namespace BxUni
             ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".asset"
         };
 
-        private List<AssetParameterData> m_missingList;
-
-        private List<AssetParameterData> MissingList
-        {
-            get
-            {
-                if (m_missingList == null) { m_missingList = new List<AssetParameterData>(); }
-                return m_missingList;
-            }
-        }
+        private List<AssetParameterData> m_missingList = new List<AssetParameterData>();
+        private List<AssetParameterData> MissingList => m_missingList;
 
         private Vector2 scrollPos;
 
-        [MenuItem("BeXide/Missing Reference Finder")]
+        [MenuItem("BeXide/Missing Finder/Missing Reference Finder")]
         private static void ShowMissingList()
         {
             // ウィンドウを表示  
@@ -107,9 +99,7 @@ namespace BxUni
                 {
                     // プロパティの種類がオブジェクト（アセット）への参照で、  
                     // その参照がnullなのにもかかわらず、参照先インスタンスIDが0でないものはMissing状態！  
-                    if (property.propertyType == SerializedPropertyType.ObjectReference &&
-                        property.objectReferenceValue == null &&
-                        property.objectReferenceInstanceIDValue != 0)
+                    if (IsMissing(property))
                     {
                         Debug.Log($"{path}:\t{property.propertyPath}");
 
@@ -125,6 +115,23 @@ namespace BxUni
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// 特定のプロパティがMissingかどうかを調べる
+        /// original information from https://teratail.com/questions/167668
+        /// </summary>
+        private bool IsMissing(SerializedProperty sp)
+        {
+            if (sp.propertyType == SerializedPropertyType.ObjectReference &&
+                sp.objectReferenceValue == null &&
+                sp.hasChildren)
+            {
+                var fileId = sp.FindPropertyRelative("m_FileID");
+                if (fileId != null &&
+                    fileId.intValue != 0) { return true; }
+            }
+            return false;
         }
 
         /// <summary>  
