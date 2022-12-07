@@ -2,7 +2,7 @@
   "name": "jp.bexide.lib.missingfinder",
   "displayName": "Missing Finder",
   "description": "Missing Reference detection tool",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "unity": "2020.3",
   "documentationUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/TextureChecker/Documentation~/index.md",
   "licensesUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/TextureChecker/LICENSE.md",
