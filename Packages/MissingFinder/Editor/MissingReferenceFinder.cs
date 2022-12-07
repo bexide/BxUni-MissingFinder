@@ -1,11 +1,10 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using UnityEngine;
 using UnityEditor;
 
-namespace BX
+namespace BxUni
 {
     /// <summary>
     /// Missingがあるアセットを検索してそのリストを表示する  
@@ -14,23 +13,24 @@ namespace BX
     {
         private class AssetParameterData
         {
-            public string path;
-            public Object baseObj;
-            public Object obj;
+            public string             path;
+            public Object             baseObj;
+            public Object             obj;
             public SerializedProperty property;
         }
 
-        private readonly string[] extensions = { ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".asset" };
+        private readonly string[] extensions =
+        {
+            ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".asset"
+        };
 
         private List<AssetParameterData> m_missingList;
+
         private List<AssetParameterData> MissingList
         {
             get
             {
-                if (m_missingList == null)
-                {
-                    m_missingList = new List<AssetParameterData>();
-                }
+                if (m_missingList == null) { m_missingList = new List<AssetParameterData>(); }
                 return m_missingList;
             }
         }
@@ -57,16 +57,15 @@ namespace BX
 
             // 全てのアセットのファイルパスを取得  
             string[] allPaths = AssetDatabase.GetAllAssetPaths();
-            int length = allPaths.Length;
+            int      length   = allPaths.Length;
 
             for (int i = 0; i < length; i++)
             {
                 // プログレスバーを表示
-                if (EditorUtility.DisplayCancelableProgressBar("Search Missing",
-                    string.Format("{0}/{1}", i + 1, length), (float)i / length))
-                {
-                    break;
-                }
+                if (EditorUtility.DisplayCancelableProgressBar(
+                        "Search Missing",
+                        string.Format("{0}/{1}", i + 1, length),
+                        (float)i / length)) { break; }
 
                 // Missing状態のプロパティを検索  
                 if (extensions.Contains(Path.GetExtension(allPaths[i])))
@@ -94,17 +93,14 @@ namespace BX
             // 各アセットについて、Missingのプロパティがあるかチェック  
             foreach (var obj in assets)
             {
-                if (obj == null)
-                {
-                    continue;
-                }
+                if (obj == null) { continue; }
                 //if (obj.name == "Deprecated EditorExtensionImpl")
                 //{
                 //    continue;
                 //}
 
                 // SerializedObjectを通してアセットのプロパティを取得する  
-                var sobj = new SerializedObject(obj);
+                var sobj     = new SerializedObject(obj);
                 var property = sobj.GetIterator();
 
                 while (property.Next(true))
@@ -118,13 +114,14 @@ namespace BX
                         Debug.Log($"{path}:\t{property.propertyPath}");
 
                         // Missing状態のプロパティリストに追加する  
-                        MissingList.Add(new AssetParameterData()
-                        {
-                            path = path,
-                            baseObj = baseObj,
-                            obj = obj,
-                            property = property.Copy(),
-                        });
+                        MissingList.Add(
+                            new AssetParameterData()
+                            {
+                                path     = path,
+                                baseObj  = baseObj,
+                                obj      = obj,
+                                property = property.Copy(),
+                            });
                     }
                 }
             }
@@ -148,8 +145,16 @@ namespace BX
             foreach (var data in MissingList)
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.ObjectField(data.baseObj, data.baseObj.GetType(), true, GUILayout.Width(200));
-                EditorGUILayout.ObjectField(data.obj, data.obj.GetType(), true, GUILayout.Width(200));
+                EditorGUILayout.ObjectField(
+                    data.baseObj,
+                    data.baseObj.GetType(),
+                    true,
+                    GUILayout.Width(200));
+                EditorGUILayout.ObjectField(
+                    data.obj,
+                    data.obj.GetType(),
+                    true,
+                    GUILayout.Width(200));
                 EditorGUILayout.TextField(data.property.propertyPath);
                 EditorGUILayout.EndHorizontal();
             }

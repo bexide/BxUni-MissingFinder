@@ -1,11 +1,9 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using UnityEngine;
 using UnityEditor;
 
-namespace BX
+namespace BxUni
 {
     /// <summary>
     /// Missing Script のある GameObject をプロジェクト中から探す
@@ -20,17 +18,16 @@ namespace BX
         }
 
         private List<ResultData> m_missingList;
+
         private List<ResultData> MissingList
         {
             get
             {
-                if (m_missingList == null)
-                {
-                    m_missingList = new List<ResultData>();
-                }
+                if (m_missingList == null) { m_missingList = new List<ResultData>(); }
                 return m_missingList;
             }
         }
+
         private Vector2 m_scrollPos;
 
         [MenuItem("BeXide/Missing Script Finder")]
@@ -51,8 +48,8 @@ namespace BX
             MissingList.Clear();
 
             // 全ての Prefab を検索
-            string[] guids = AssetDatabase.FindAssets("t:prefab");
-            int guidsLength = guids.Length;
+            string[] guids       = AssetDatabase.FindAssets("t:prefab");
+            int      guidsLength = guids.Length;
             for (int i = 0; i < guidsLength; i++)
             {
                 string guid = guids[i];
@@ -65,8 +62,10 @@ namespace BX
                 }
 
                 // プログレスバー
-                if (EditorUtility.DisplayCancelableProgressBar("集計中",
-                    $"{i + 1}/{guidsLength}", (float)(i + 1) / guidsLength))
+                if (EditorUtility.DisplayCancelableProgressBar(
+                        "集計中",
+                        $"{i + 1}/{guidsLength}",
+                        (float)(i + 1) / guidsLength))
                 {
                     // キャンセルされた
                     break;
@@ -108,12 +107,13 @@ namespace BX
                     if (components.Any(c => c == null))
                     {
                         //Debug.Log($"{baseObj.name}:\t{obj.name} has missing script!");
-                        MissingList.Add(new ResultData()
-                        {
-                            path = path,
-                            prefab = baseObj,
-                            obj = obj,
-                        });
+                        MissingList.Add(
+                            new ResultData()
+                            {
+                                path   = path,
+                                prefab = baseObj,
+                                obj    = obj,
+                            });
                     }
                 }
             }
@@ -136,8 +136,16 @@ namespace BX
             foreach (var data in MissingList)
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.ObjectField(data.prefab, data.prefab.GetType(), true, GUILayout.Width(200));
-                EditorGUILayout.ObjectField(data.obj, data.obj.GetType(), true, GUILayout.Width(200));
+                EditorGUILayout.ObjectField(
+                    data.prefab,
+                    data.prefab.GetType(),
+                    true,
+                    GUILayout.Width(200));
+                EditorGUILayout.ObjectField(
+                    data.obj,
+                    data.obj.GetType(),
+                    true,
+                    GUILayout.Width(200));
                 EditorGUILayout.EndHorizontal();
             }
             EditorGUILayout.EndScrollView();
