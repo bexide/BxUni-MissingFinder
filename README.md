@@ -1,5 +1,11 @@
 # Missing Finder
 
-UnityƒvƒƒWƒFƒNƒg’†‚ÌQÆØ‚ê(Missing)‚ğŒŸo‚µ‚Ü‚·
+Unityãƒ—ãƒ­ã‚¸ã‚§ã‚¯ãƒˆä¸­ã®å‚ç…§åˆ‡ã‚Œ(Missing)ã‚’æ¤œå‡ºã—ã¾ã™
 
-[ƒpƒbƒP[ƒWREADME](Packages/MissingFinder/README.md)
+## ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆ
+
+[Missing Finder](Packages/MissingFinder/Documentation~/index.md)
+
+## ãƒ©ã‚¤ã‚»ãƒ³ã‚¹
+
+[LICENSE](Packages/MissingFinder/LICENSE.md)

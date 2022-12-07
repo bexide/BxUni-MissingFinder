@@ -4,8 +4,11 @@
   "description": "Missing Reference detection tool",
   "version": "1.0.1",
   "unity": "2020.3",
-  "license": "",
-  "author": "BeXide, Inc.",
+  "documentationUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/TextureChecker/Documentation~/index.md",
+  "licensesUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/TextureChecker/LICENSE.md",
+  "author": {
+    "name": "BeXide, Inc."
+  },
   "category": "BX-lib",
   "publishConfig": {
     "registry": "https://verdaccio.bomber.co.jp"

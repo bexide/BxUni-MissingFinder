@@ -11,6 +11,3 @@ Unityプロジェクト中の参照切れ(Missing)を検出します
 
 * UnityEditorメニュー → BeXide → Missing Script Finder
 	* コンポーネントの参照切れを検出します
-
-## 作成者
-林　曜三

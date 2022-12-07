@@ -1,5 +1,5 @@
 {
-    "name": "BX.MissingFinder.Editor",
+    "name": "BxUni.MissingFinder.Editor",
     "rootNamespace": "",
     "references": [
         "Unity.EditorCoroutines.Editor"
