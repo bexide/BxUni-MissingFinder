@@ -1,10 +1,13 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using Unity.EditorCoroutines.Editor;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 
-namespace BxUni
+namespace BxUni.MissingFinder
 {
     /// <summary>
     /// Missingがあるアセットを検索してそのリストを表示する  
@@ -23,8 +26,14 @@ namespace BxUni
             ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".asset"
         };
 
-        private List<AssetParameterData> m_missingList = new List<AssetParameterData>();
-        private List<AssetParameterData> MissingList => m_missingList;
+        /// <summary>設定</summary>
+        private MissingFinderSettings Settings { get; set; }
+
+        /// <summary> GUI </summary>
+        MultiColumnHeader               m_columnHeader;
+        MultiColumnHeaderState.Column[] m_columns;
+
+        private List<AssetParameterData> MissingList { get; set; }
 
         private Vector2 m_scrollPos;
 
@@ -34,42 +43,188 @@ namespace BxUni
             // ウィンドウを表示  
             var window = GetWindow<MissingReferenceFinder>();
             //window.minSize = new Vector2(900, 300);
+            
+            window.Initialize();
+        }
+        
+        /// <summary>初期化</summary>
+        private void Initialize()
+        {
+            LoadSettings();
+            InitializeMultiColumnHeader();
+        }
 
-            // Missingがあるアセットを検索  
-            window.Search();
+        private void LoadSettings()
+        {
+            string settingsPath = $"Assets/Editor/BxUniMissingReferenceFinder.asset";
+            Settings = AssetDatabase.LoadAssetAtPath<MissingFinderSettings>(settingsPath);
+
+            if (Settings == null)
+            {
+                Settings = CreateInstance<MissingFinderSettings>();
+                CheckDirectory(settingsPath);
+                AssetDatabase.CreateAsset(Settings, settingsPath);
+            }
+        }
+
+        private void CheckDirectory(string path)
+        {
+            string directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+        }
+
+        /// <summary>
+        /// マルチカラムヘッダ初期化
+        /// </summary>
+        private void InitializeMultiColumnHeader()
+        {
+            m_columns = new[]
+            {
+                new MultiColumnHeaderState.Column()
+                {
+                    headerContent       = new GUIContent("Asset"),
+                    width               = 100f,
+                    autoResize          = true,
+                    headerTextAlignment = TextAlignment.Left
+                },
+                new MultiColumnHeaderState.Column()
+                {
+                    headerContent       = new GUIContent("SubAsset"),
+                    width               = 50f,
+                    autoResize          = true,
+                    headerTextAlignment = TextAlignment.Left
+                },
+                new MultiColumnHeaderState.Column()
+                {
+                    headerContent       = new GUIContent("Property"),
+                    width               = 100f,
+                    autoResize          = true,
+                    headerTextAlignment = TextAlignment.Left
+                },
+            };
+            m_columnHeader
+                = new MultiColumnHeader(new MultiColumnHeaderState(m_columns)) { height = 25 };
+            m_columnHeader.ResizeToFit();
+            //m_columnHeader.sortingChanged += OnSortingChanged;
+        }
+
+        private void ClearResult()
+        {
+            if (MissingList == null) { MissingList = new List<AssetParameterData>(); }
+            else { MissingList.Clear(); }
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.LabelField("アセット中の参照切れを検出します");
+            EditorGUILayout.Space();
+
+            var newTarget =
+                EditorGUILayout.ObjectField(
+                    "対象フォルダ",
+                    Settings.TargetFolder,
+                    typeof(DefaultAsset),
+                    allowSceneObjects: false);
+            Settings.TargetFolder = newTarget as DefaultAsset;
+
+            if (MissingList == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "チェックを開始するには下のチェックボタンを押してください。",
+                    MessageType.Info);
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("チェック", GUILayout.MaxWidth(120)))
+            {
+                EditorCoroutineUtility.StartCoroutine(Execute(), this);
+            }
+
+            EditorGUI.BeginDisabledGroup(MissingList == null);
+            if (GUILayout.Button("クリア", GUILayout.MaxWidth(120))) { ClearResult(); }
+            EditorGUI.EndDisabledGroup();
+            EditorGUILayout.EndHorizontal();
+
+            DrawResult();
         }
 
         /// <summary>  
-        /// Missingがあるアセットを検索  
+        /// Missingのリストを表示  
         /// </summary>  
-        private void Search()
+        private void DrawResult()
         {
-            MissingList.Clear();
+            if (MissingList == null) { return; }
 
-            var selections = Selection.GetFiltered<Object>(SelectionMode.Assets);
-
-            string[] paths = selections.Length <= 0
-                ? AssetDatabase.GetAllAssetPaths()
-                : selections.Select(AssetDatabase.GetAssetPath).ToArray();
-
-            SearchOnPath(paths);
-        }
-
-        private void SearchOnPath(string[] allPaths)
-        {
-            int length = allPaths.Length;
-            for (int i = 0; i < length; i++)
+            if (MissingList.Count == 0)
             {
+                EditorGUILayout.HelpBox("見つかりませんでした。", MessageType.Info);
+                return;
+            }
+
+            // カラムヘッダ
+            var headerRect = EditorGUILayout.GetControlRect();
+            headerRect.height = m_columnHeader.height;
+            float xScroll = 0;
+            m_columnHeader.OnGUI(headerRect, xScroll);
+
+            // リスト表示
+            m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
+
+            foreach (var data in MissingList)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.ObjectField(
+                    data.m_baseObj,
+                    data.m_baseObj.GetType(),
+                    true,
+                    GUILayout.Width(m_columnHeader.GetColumnRect(0).width - 2f));
+                EditorGUILayout.TextField(
+                    data.m_objectPath,
+                    GUILayout.Width(m_columnHeader.GetColumnRect(1).width - 2f));
+                EditorGUILayout.TextField(data.m_property.propertyPath);
+                EditorGUILayout.EndHorizontal();
+            }
+            EditorGUILayout.EndScrollView();
+        }
+        
+        /// <summary>  
+        /// 検索実行  
+        /// </summary>  
+        private IEnumerator Execute()
+        {
+            ClearResult();
+            
+            string targetPath = AssetDatabase.GetAssetPath(Settings.TargetFolder);
+            if (string.IsNullOrEmpty(targetPath)) { targetPath = "Assets"; }
+            
+            string[] guids       = AssetDatabase.FindAssets("", new[] { targetPath });
+            int      guidsLength = guids.Length;
+            if (guidsLength <= 0) { yield break; }
+
+            for (int i = 0; i < guidsLength; i++)
+            {
+                string guid = guids[i];
+                //Debug.Log($"[{guid}]");
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrEmpty(path))
+                {
+                    Debug.LogError($" cannot get path from GUID [{guid}]");
+                    continue;
+                }
+
                 // プログレスバーを表示
                 if (EditorUtility.DisplayCancelableProgressBar(
                         "Search Missing",
-                        $"{i + 1}/{length}",
-                        (float)i / length)) { break; }
+                        $"{i + 1}/{guidsLength}",
+                        (float)i / guidsLength)) { break; }
 
-                // Missing状態のプロパティを検索  
-                if (k_extensions.Contains(Path.GetExtension(allPaths[i])))
+                if (k_extensions.Contains(Path.GetExtension(path)))
                 {
-                    SearchMissing(allPaths[i]);
+                    SearchMissing(path);
+                    yield return null;
                 }
             }
 
@@ -151,36 +306,5 @@ namespace BxUni
             return false;
         }
 
-        /// <summary>  
-        /// Missingのリストを表示  
-        /// </summary>  
-        private void OnGUI()
-        {
-            // 列見出し  
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Asset", GUILayout.Width(200));
-            EditorGUILayout.LabelField("SubAsset", GUILayout.Width(200));
-            EditorGUILayout.LabelField("Property");
-            EditorGUILayout.EndHorizontal();
-
-            // リスト表示  
-            m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
-
-            foreach (var data in MissingList)
-            {
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.ObjectField(
-                    data.m_baseObj,
-                    data.m_baseObj.GetType(),
-                    true,
-                    GUILayout.Width(200));
-                EditorGUILayout.LabelField(
-                    data.m_objectPath,
-                    GUILayout.Width(200));
-                EditorGUILayout.TextField(data.m_property.propertyPath);
-                EditorGUILayout.EndHorizontal();
-            }
-            EditorGUILayout.EndScrollView();
-        }
     }
 }
