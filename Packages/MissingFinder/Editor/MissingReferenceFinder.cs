@@ -13,13 +13,12 @@ namespace BxUni
     {
         private class AssetParameterData
         {
-            public string             path;
-            public Object             baseObj;
-            public Object             obj;
-            public SerializedProperty property;
+            public Object             m_baseObj;
+            public string             m_objectPath;
+            public SerializedProperty m_property;
         }
 
-        private readonly string[] extensions =
+        private readonly string[] k_extensions =
         {
             ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".asset"
         };
@@ -27,7 +26,7 @@ namespace BxUni
         private List<AssetParameterData> m_missingList = new List<AssetParameterData>();
         private List<AssetParameterData> MissingList => m_missingList;
 
-        private Vector2 scrollPos;
+        private Vector2 m_scrollPos;
 
         [MenuItem("BeXide/Missing Finder/Missing Reference Finder")]
         private static void ShowMissingList()
@@ -68,7 +67,7 @@ namespace BxUni
                         (float)i / length)) { break; }
 
                 // Missing状態のプロパティを検索  
-                if (extensions.Contains(Path.GetExtension(allPaths[i])))
+                if (k_extensions.Contains(Path.GetExtension(allPaths[i])))
                 {
                     SearchMissing(allPaths[i]);
                 }
@@ -124,12 +123,11 @@ namespace BxUni
 
                         // Missing状態のプロパティリストに追加する  
                         MissingList.Add(
-                            new AssetParameterData()
+                            new AssetParameterData
                             {
-                                path     = path,
-                                baseObj  = baseObj,
-                                obj      = currentObj,
-                                property = property.Copy(),
+                                m_baseObj    = baseObj,
+                                m_objectPath = currentObj.name,
+                                m_property   = property.Copy()
                             });
                     }
                 }
@@ -166,22 +164,20 @@ namespace BxUni
             EditorGUILayout.EndHorizontal();
 
             // リスト表示  
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+            m_scrollPos = EditorGUILayout.BeginScrollView(m_scrollPos);
 
             foreach (var data in MissingList)
             {
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.ObjectField(
-                    data.baseObj,
-                    data.baseObj.GetType(),
+                    data.m_baseObj,
+                    data.m_baseObj.GetType(),
                     true,
                     GUILayout.Width(200));
-                EditorGUILayout.ObjectField(
-                    data.obj,
-                    data.obj.GetType(),
-                    true,
+                EditorGUILayout.LabelField(
+                    data.m_objectPath,
                     GUILayout.Width(200));
-                EditorGUILayout.TextField(data.property.propertyPath);
+                EditorGUILayout.TextField(data.m_property.propertyPath);
                 EditorGUILayout.EndHorizontal();
             }
             EditorGUILayout.EndScrollView();
