@@ -48,14 +48,14 @@ namespace BxUni
             MissingList.Clear();
 
             var selections = Selection.GetFiltered<Object>(SelectionMode.Assets);
-            
+
             string[] paths = selections.Length <= 0
                 ? AssetDatabase.GetAllAssetPaths()
                 : selections.Select(AssetDatabase.GetAssetPath).ToArray();
 
             SearchOnPath(paths);
         }
-        
+
         private void SearchOnPath(string[] allPaths)
         {
             int length = allPaths.Length;
@@ -94,20 +94,33 @@ namespace BxUni
             foreach (var obj in assets)
             {
                 if (obj == null) { continue; }
-                //if (obj.name == "Deprecated EditorExtensionImpl")
-                //{
-                //    continue;
-                //}
+
+                //Debug.Log($" obj=[{obj}]");
+                var currentObj = obj;
 
                 // SerializedObjectを通してアセットのプロパティを取得する  
-                var sobj     = new SerializedObject(obj);
+                var sobj = new SerializedObject(obj);
+
+                if (obj.ToString().EndsWith("PrefabInstance)"))
+                {
+                    var source = sobj.FindProperty("m_SourcePrefab");
+                    if (source != null && source.objectReferenceValue != null)
+                    {
+                        var    refObj  = source.objectReferenceValue;
+                        string refPath = AssetDatabase.GetAssetPath(refObj);
+                        //Debug.Log($"  SourcePrefabPath=[{refPath}]");
+                        var sourcePrefab = AssetDatabase.LoadAssetAtPath<Object>(refPath);
+                        currentObj = sourcePrefab;
+                    }
+                }
+
                 var property = sobj.GetIterator();
 
                 while (property.Next(true))
                 {
                     if (IsMissing(property))
                     {
-                        Debug.Log($"{path}:\t{property.propertyPath}");
+                        Debug.LogWarning($"Missing in {path}:\t{property.propertyPath}");
 
                         // Missing状態のプロパティリストに追加する  
                         MissingList.Add(
@@ -115,7 +128,7 @@ namespace BxUni
                             {
                                 path     = path,
                                 baseObj  = baseObj,
-                                obj      = obj,
+                                obj      = currentObj,
                                 property = property.Copy(),
                             });
                     }
