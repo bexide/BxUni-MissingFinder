@@ -30,7 +30,8 @@ namespace BxUni.MissingFinder
         private MissingFinderSettings Settings { get; set; }
 
         /// <summary> GUI </summary>
-        MultiColumnHeader               m_columnHeader;
+        MultiColumnHeader m_columnHeader;
+
         MultiColumnHeaderState.Column[] m_columns;
 
         private List<AssetParameterData> MissingList { get; set; }
@@ -43,10 +44,10 @@ namespace BxUni.MissingFinder
             // ウィンドウを表示  
             var window = GetWindow<MissingReferenceFinder>();
             //window.minSize = new Vector2(900, 300);
-            
+
             window.Initialize();
         }
-        
+
         /// <summary>初期化</summary>
         private void Initialize()
         {
@@ -188,18 +189,21 @@ namespace BxUni.MissingFinder
                 EditorGUILayout.EndHorizontal();
             }
             EditorGUILayout.EndScrollView();
+
+            // 修正ボタン
+            if (GUILayout.Button("参照切れを削除")) { FixMissingReferences(); }
         }
-        
+
         /// <summary>  
         /// 検索実行  
         /// </summary>  
         private IEnumerator Execute()
         {
             ClearResult();
-            
+
             string targetPath = AssetDatabase.GetAssetPath(Settings.TargetFolder);
             if (string.IsNullOrEmpty(targetPath)) { targetPath = "Assets"; }
-            
+
             string[] guids       = AssetDatabase.FindAssets("", new[] { targetPath });
             int      guidsLength = guids.Length;
             if (guidsLength <= 0) { yield break; }
@@ -241,7 +245,7 @@ namespace BxUni.MissingFinder
             // 指定パスのオブジェクト
             var baseObj = AssetDatabase.LoadAssetAtPath<Object>(path);
 
-            // 指定パスのアセットを全て取得  
+            // 指定パスのアセットを全て取得
             var assets = AssetDatabase.LoadAllAssetsAtPath(path);
 
             // 各アセットについて、Missingのプロパティがあるかチェック  
@@ -304,6 +308,60 @@ namespace BxUni.MissingFinder
                     fileId.intValue != 0) { return true; }
             }
             return false;
+        }
+
+        /// <summary>
+        /// 見つかった参照切れを削除する
+        /// </summary>
+        private void FixMissingReferences()
+        {
+            var assets = MissingList.Select(param => param.m_baseObj).Distinct().ToList();
+
+            int length = assets.Count;
+            for (int i = 0; i < length; i++)
+            {
+                // プログレスバーを表示
+                if (EditorUtility.DisplayCancelableProgressBar(
+                        "Remove Missing",
+                        $"{i + 1}/{length}",
+                        (float)i / length)) { break; }
+
+                string path = AssetDatabase.GetAssetPath(assets[i]);
+                FixMissingReference(path);
+            }
+
+            AssetDatabase.SaveAssets();
+
+            // プログレスバーを消す  
+            EditorUtility.ClearProgressBar();
+        }
+
+        private void FixMissingReference(string path)
+        {
+            // 指定パスのアセットを全て取得
+            var assets = AssetDatabase.LoadAllAssetsAtPath(path);
+
+            // 各アセットについて、Missingのプロパティがあるかチェック  
+            foreach (var obj in assets)
+            {
+                if (obj == null) { continue; }
+
+                // SerializedObjectを通してアセットのプロパティを取得する  
+                var sobj     = new SerializedObject(obj);
+                var property = sobj.GetIterator();
+
+                while (property.Next(true))
+                {
+                    if (IsMissing(property))
+                    {
+                        Debug.LogWarning($"Remove {path}:\t{property.propertyPath}");
+                        var fileId = property.FindPropertyRelative("m_FileID");
+                        fileId.intValue = 0;
+                    }
+                }
+
+                sobj.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
     }
