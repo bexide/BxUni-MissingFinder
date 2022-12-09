@@ -38,7 +38,7 @@ namespace BxUni.MissingFinder
 
         private Vector2 m_scrollPos;
 
-        [MenuItem("BeXide/Missing Finder/Missing Reference Finder")]
+        [MenuItem("BeXide/Missing Reference Finder")]
         private static void ShowMissingList()
         {
             // ウィンドウを表示  
@@ -191,7 +191,7 @@ namespace BxUni.MissingFinder
             EditorGUILayout.EndScrollView();
 
             // 修正ボタン
-            if (GUILayout.Button("参照切れを削除")) { FixMissingReferences(); }
+            if (GUILayout.Button("参照切れを削除")) { ConfirmFixMissingReferences(); }
         }
 
         /// <summary>  
@@ -313,7 +313,19 @@ namespace BxUni.MissingFinder
         /// <summary>
         /// 見つかった参照切れを削除する
         /// </summary>
-        private void FixMissingReferences()
+        private void ConfirmFixMissingReferences()
+        {
+            if (EditorUtility.DisplayDialog(
+                    "参照切れを削除",
+                    "見つかった参照切れを削除します。同時に全ての未保存の修正は保存され、この操作をUndoすることはできません。よろしいですか？",
+                    "削除実行",
+                    "キャンセル"))
+            {
+                FixMissingReference();
+            }
+        }
+
+        private void FixMissingReference()
         {
             var assets = MissingList.Select(param => param.m_baseObj).Distinct().ToList();
 
@@ -334,6 +346,8 @@ namespace BxUni.MissingFinder
 
             // プログレスバーを消す  
             EditorUtility.ClearProgressBar();
+
+            ClearResult();
         }
 
         private void FixMissingReference(string path)
