@@ -1,3 +1,5 @@
+// (C)2022 BeXide,Inc
+
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +12,7 @@ using UnityEditor.IMGUI.Controls;
 namespace BxUni.MissingFinder
 {
     /// <summary>
-    /// Missingがあるアセットを検索してそのリストを表示する  
+    /// Missingがあるアセットを検索してそのリストを表示する
     /// </summary>  
     public class MissingReferenceFinder : EditorWindow
     {
@@ -21,6 +23,18 @@ namespace BxUni.MissingFinder
             public SerializedProperty m_property;
         }
 
+        [System.Flags]
+        enum AssetType
+        {
+            Prefab   = 1 << 0,
+            Material = 1 << 1,
+            Animator = 1 << 2,
+            Script   = 1 << 3,
+            Shader   = 1 << 4,
+            Mask     = 1 << 5,
+            Other    = 1 << 6,
+        };
+        
         private readonly string[] k_extensions =
         {
             ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".asset"
@@ -30,9 +44,11 @@ namespace BxUni.MissingFinder
         private MissingFinderSettings Settings { get; set; }
 
         /// <summary> GUI </summary>
-        MultiColumnHeader m_columnHeader;
+        private MultiColumnHeader m_columnHeader;
 
-        MultiColumnHeaderState.Column[] m_columns;
+        private MultiColumnHeaderState.Column[] m_columns;
+
+        private AssetType m_targetAssetTypes = (AssetType)~0;
 
         private List<AssetParameterData> MissingList { get; set; }
 
@@ -131,6 +147,9 @@ namespace BxUni.MissingFinder
                     allowSceneObjects: false);
             Settings.TargetFolder = newTarget as DefaultAsset;
 
+            m_targetAssetTypes = (AssetType)EditorGUILayout.EnumFlagsField(
+                "対象アセットタイプ", m_targetAssetTypes);
+
             if (MissingList == null)
             {
                 EditorGUILayout.HelpBox(
@@ -208,6 +227,10 @@ namespace BxUni.MissingFinder
             int      guidsLength = guids.Length;
             if (guidsLength <= 0) { yield break; }
 
+            string[] extensions = k_extensions
+                .Where((_, index) => m_targetAssetTypes.HasFlag((AssetType)(1 << index)))
+                .ToArray();
+
             for (int i = 0; i < guidsLength; i++)
             {
                 string guid = guids[i];
@@ -225,7 +248,7 @@ namespace BxUni.MissingFinder
                         $"{i + 1}/{guidsLength}",
                         (float)i / guidsLength)) { break; }
 
-                if (k_extensions.Contains(Path.GetExtension(path)))
+                if (extensions.Contains(Path.GetExtension(path)))
                 {
                     SearchMissing(path);
                     yield return null;
