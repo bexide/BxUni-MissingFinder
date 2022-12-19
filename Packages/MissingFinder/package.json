@@ -1,17 +1,17 @@
 {
-  "name": "jp.bexide.lib.missingfinder",
+  "name": "jp.co.bexide.bxuni.missingfinder",
   "displayName": "BxUni Missing Finder",
   "description": "Missing Reference detection tool",
-  "version": "1.0.5",
+  "version": "1.0.0",
   "unity": "2020.3",
-  "documentationUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/TextureChecker/Documentation~/index.md",
-  "licensesUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/TextureChecker/LICENSE.md",
+  "documentationUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/MissingFinder/Documentation~/index.md",
+  "licensesUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/MissingFinder/LICENSE.md",
   "author": {
     "name": "BeXide, Inc."
   },
   "category": "BX-lib",
   "publishConfig": {
-    "registry": "https://verdaccio.bomber.co.jp"
+    "registry": "https://package.openupm.com"
   },
   "dependencies": {
     "com.unity.editorcoroutines": "1.0.0"
