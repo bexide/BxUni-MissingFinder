@@ -2,7 +2,17 @@
 
 ## 概要
 
-Unityプロジェクト中の参照切れ(Missing)を検出します
+アセット中の参照切れ(Missing)を検出します
+
+## インストール
+
+### Package Manager からのインストール
+
+* Package Manager → Scoped Registries に以下を登録
+    * URL: https://package.openupm.com
+    * Scope: jp.co.bexide
+* Package Manager → My Registries から以下を選択して Install
+    * BxUni Missing Finder
 
 ## 使い方
 
@@ -46,5 +56,8 @@ UnityEditorメニュー → BeXide → Missing Reference Finder
 検査結果の下にある「参照切れを削除」ボタンを押すと、検出された参照切れを全てクリアします。
 この操作により元より設定されていた参照は永久に失われ、アンドゥできませんのでご注意ください。
 
+## お問い合わせ
 
+* 不具合のご報告は GitHub の Issues へ
+* その他お問い合わせは mailto:tech-info@bexide.co.jp へ
 
