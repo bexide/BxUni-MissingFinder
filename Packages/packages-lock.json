@@ -90,7 +90,7 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
-    "jp.bexide.lib.missingfinder": {
+    "jp.co.bexide.bxuni.missingfinder": {
       "version": "file:MissingFinder",
       "depth": 0,
       "source": "embedded",
