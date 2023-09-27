@@ -32,12 +32,13 @@ namespace BxUni.MissingFinder
             Script   = 1 << 3,
             Shader   = 1 << 4,
             Mask     = 1 << 5,
-            Other    = 1 << 6,
+            Timeline = 1 << 6,
+            Other    = 1 << 7,
         };
         
         private readonly string[] k_extensions =
         {
-            ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".asset"
+            ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".playable", ".asset"
         };
 
         /// <summary>設定</summary>
