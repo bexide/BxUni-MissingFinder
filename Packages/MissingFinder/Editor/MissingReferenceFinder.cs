@@ -41,8 +41,24 @@ namespace BxUni.MissingFinder
             ".prefab", ".mat", ".controller", ".cs", ".shader", ".mask", ".playable", ".asset"
         };
 
-        /// <summary>設定</summary>
-        private MissingFinderSettings Settings { get; set; }
+        private const string k_settingsPath = "Assets/Editor/BxUniMissingReferenceFinder.asset";
+
+        /// <summary>設定(必要になったときに読み込む。未取得ならnull)</summary>
+        private MissingFinderSettings m_settings;
+
+        private MissingFinderSettings Settings
+        {
+            get
+            {
+                if (m_settings == null) { m_settings = LoadSettings(); }
+                return m_settings;
+            }
+        }
+
+        /// <summary>検索中か</summary>
+        private bool m_isSearching;
+
+        private EditorCoroutine m_searchCoroutine;
 
         /// <summary> GUI </summary>
         private MultiColumnHeader m_columnHeader;
@@ -69,21 +85,45 @@ namespace BxUni.MissingFinder
         /// </summary>
         private void OnEnable()
         {
-            LoadSettings();
+            // 設定の読み込みはAssetDatabaseの準備ができていない場合があるのでここでは行わない
             InitializeMultiColumnHeader();
         }
 
-        private void LoadSettings()
+        /// <summary>
+        /// 検索中にウィンドウが閉じられたりリロードされたりした場合に、
+        /// コルーチンを止めてプログレスバーを消す
+        /// </summary>
+        private void OnDisable()
         {
-            string settingsPath = $"Assets/Editor/BxUniMissingReferenceFinder.asset";
-            Settings = AssetDatabase.LoadAssetAtPath<MissingFinderSettings>(settingsPath);
+            if (!m_isSearching) { return; }
 
-            if (Settings == null)
+            if (m_searchCoroutine != null)
             {
-                Settings = CreateInstance<MissingFinderSettings>();
-                CheckDirectory(settingsPath);
-                AssetDatabase.CreateAsset(Settings, settingsPath);
+                EditorCoroutineUtility.StopCoroutine(m_searchCoroutine);
             }
+            m_searchCoroutine = null;
+            m_isSearching     = false;
+            EditorUtility.ClearProgressBar();
+        }
+
+        /// <summary>
+        /// 設定を読み込む。まだ読み込めない場合はnullを返す
+        /// </summary>
+        private MissingFinderSettings LoadSettings()
+        {
+            // インポート中などはAssetDatabaseが使えないので何もしない
+            if (EditorApplication.isUpdating || EditorApplication.isCompiling) { return null; }
+
+            var settings = AssetDatabase.LoadAssetAtPath<MissingFinderSettings>(k_settingsPath);
+            if (settings != null) { return settings; }
+
+            // ファイルがあるのに読めない場合は、既存の設定を上書きしないよう作成しない
+            if (File.Exists(k_settingsPath)) { return null; }
+
+            settings = CreateInstance<MissingFinderSettings>();
+            CheckDirectory(k_settingsPath);
+            AssetDatabase.CreateAsset(settings, k_settingsPath);
+            return settings;
         }
 
         private void CheckDirectory(string path)
@@ -141,6 +181,14 @@ namespace BxUni.MissingFinder
             EditorGUILayout.LabelField("アセット中の参照切れを検出します");
             EditorGUILayout.Space();
 
+            if (Settings == null)
+            {
+                // 設定がまだ読み込めない(インポート中など)。準備ができたら再描画する
+                EditorGUILayout.HelpBox("設定を読み込み中です…", MessageType.Info);
+                Repaint();
+                return;
+            }
+
             var newTarget =
                 EditorGUILayout.ObjectField(
                     "対象フォルダ",
@@ -160,12 +208,16 @@ namespace BxUni.MissingFinder
             }
 
             EditorGUILayout.BeginHorizontal();
+            // 検索中は二重に実行できないようにする
+            EditorGUI.BeginDisabledGroup(m_isSearching);
             if (GUILayout.Button("チェック", GUILayout.MaxWidth(120)))
             {
-                EditorCoroutineUtility.StartCoroutine(Execute(), this);
+                m_isSearching     = true;
+                m_searchCoroutine = EditorCoroutineUtility.StartCoroutine(Execute(), this);
             }
+            EditorGUI.EndDisabledGroup();
 
-            EditorGUI.BeginDisabledGroup(MissingList == null);
+            EditorGUI.BeginDisabledGroup(MissingList == null || m_isSearching);
             if (GUILayout.Button("クリア", GUILayout.MaxWidth(120))) { ClearResult(); }
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndHorizontal();
@@ -212,7 +264,9 @@ namespace BxUni.MissingFinder
             EditorGUILayout.EndScrollView();
 
             // 修正ボタン
+            EditorGUI.BeginDisabledGroup(m_isSearching);
             if (GUILayout.Button("参照切れを削除")) { ConfirmFixMissingReferences(); }
+            EditorGUI.EndDisabledGroup();
         }
 
         /// <summary>  
@@ -220,21 +274,21 @@ namespace BxUni.MissingFinder
         /// </summary>  
         private IEnumerator Execute()
         {
-            ClearResult();
-
-            string targetPath = AssetDatabase.GetAssetPath(Settings.TargetFolder);
-            if (string.IsNullOrEmpty(targetPath)) { targetPath = "Assets"; }
-
-            string[] guids       = AssetDatabase.FindAssets("", new[] { targetPath });
-            int      guidsLength = guids.Length;
-            if (guidsLength <= 0) { yield break; }
-
-            string[] extensions = k_extensions
-                .Where((_, index) => m_targetAssetTypes.HasFlag((AssetType)(1 << index)))
-                .ToArray();
-
             try
             {
+                ClearResult();
+
+                string targetPath = AssetDatabase.GetAssetPath(Settings.TargetFolder);
+                if (string.IsNullOrEmpty(targetPath)) { targetPath = "Assets"; }
+
+                string[] guids       = AssetDatabase.FindAssets("", new[] { targetPath });
+                int      guidsLength = guids.Length;
+                if (guidsLength <= 0) { yield break; }
+
+                string[] extensions = k_extensions
+                    .Where((_, index) => m_targetAssetTypes.HasFlag((AssetType)(1 << index)))
+                    .ToArray();
+
                 for (int i = 0; i < guidsLength; i++)
                 {
                     string guid = guids[i];
@@ -261,12 +315,14 @@ namespace BxUni.MissingFinder
             }
             finally
             {
-                // 例外やキャンセルでも必ずプログレスバーを消す
+                // 例外やキャンセルでも必ずプログレスバーを消し、実行中フラグを戻す
                 EditorUtility.ClearProgressBar();
+                m_isSearching = false;
+                m_searchCoroutine = null;
             }
         }
 
-        /// <summary>  
+        /// <summary>
         /// 指定アセットにMissingのプロパティがあれば、それをmissingListに追加する  
         /// </summary>  
         /// <param name="path">Path.</param>  
