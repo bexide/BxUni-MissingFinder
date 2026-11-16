@@ -18,9 +18,9 @@ namespace BxUni.MissingFinder
     {
         private class AssetParameterData
         {
-            public Object             m_baseObj;
-            public string             m_objectPath;
-            public SerializedProperty m_property;
+            public Object m_baseObj;
+            public string m_objectPath;
+            public string m_propertyPath;
         }
 
         [System.Flags]
@@ -206,7 +206,7 @@ namespace BxUni.MissingFinder
                 EditorGUILayout.TextField(
                     data.m_objectPath,
                     GUILayout.Width(m_columnHeader.GetColumnRect(1).width - 2f));
-                EditorGUILayout.TextField(data.m_property.propertyPath);
+                EditorGUILayout.TextField(data.m_propertyPath);
                 EditorGUILayout.EndHorizontal();
             }
             EditorGUILayout.EndScrollView();
@@ -282,7 +282,7 @@ namespace BxUni.MissingFinder
                 var currentObj = obj;
 
                 // SerializedObjectを通してアセットのプロパティを取得する  
-                var sobj = new SerializedObject(obj);
+                using var sobj = new SerializedObject(obj);
 
                 if (obj.ToString().EndsWith("PrefabInstance)"))
                 {
@@ -310,8 +310,8 @@ namespace BxUni.MissingFinder
                             new AssetParameterData
                             {
                                 m_baseObj    = baseObj,
-                                m_objectPath = currentObj.name,
-                                m_property   = property.Copy()
+                                m_objectPath   = currentObj.name,
+                                m_propertyPath = property.propertyPath
                             });
                     }
                 }
@@ -386,8 +386,8 @@ namespace BxUni.MissingFinder
                 if (obj == null) { continue; }
 
                 // SerializedObjectを通してアセットのプロパティを取得する  
-                var sobj     = new SerializedObject(obj);
-                var property = sobj.GetIterator();
+                using var sobj     = new SerializedObject(obj);
+                var       property = sobj.GetIterator();
 
                 while (property.Next(true))
                 {
