@@ -3,7 +3,7 @@
   "displayName": "BxUni Missing Finder",
   "description": "Missing Reference detection tool",
   "version": "1.0.2",
-  "unity": "2020.3",
+  "unity": "6000.3",
   "documentationUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/MissingFinder/Documentation~/index.md",
   "licensesUrl": "https://github.com/bexide/BxUni-MissingFinder/blob/main/Packages/MissingFinder/LICENSE.md",
   "author": {
