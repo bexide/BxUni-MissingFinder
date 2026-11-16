@@ -71,3 +71,4 @@ sysinfo.txt
 /.idea/
 
 /UserSettings/
+!/UserSettings/EditorUserSettings.asset
