@@ -69,3 +69,5 @@ sysinfo.txt
 
 # JetBrains IDEA
 /.idea/
+
+/UserSettings/
