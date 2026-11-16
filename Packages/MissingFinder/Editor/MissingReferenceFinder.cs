@@ -59,14 +59,15 @@ namespace BxUni.MissingFinder
         private static void ShowMissingList()
         {
             // ウィンドウを表示  
-            var window = GetWindow<MissingReferenceFinder>();
+            GetWindow<MissingReferenceFinder>();
             //window.minSize = new Vector2(900, 300);
-
-            window.Initialize();
         }
 
-        /// <summary>初期化</summary>
-        private void Initialize()
+        /// <summary>
+        /// 初期化
+        /// ウィンドウ生成時だけでなく、ドメインリロード後やレイアウト復元時にも呼ばれる
+        /// </summary>
+        private void OnEnable()
         {
             LoadSettings();
             InitializeMultiColumnHeader();
