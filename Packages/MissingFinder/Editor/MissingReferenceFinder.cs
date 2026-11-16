@@ -233,32 +233,37 @@ namespace BxUni.MissingFinder
                 .Where((_, index) => m_targetAssetTypes.HasFlag((AssetType)(1 << index)))
                 .ToArray();
 
-            for (int i = 0; i < guidsLength; i++)
+            try
             {
-                string guid = guids[i];
-                //Debug.Log($"[{guid}]");
-                string path = AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(path))
+                for (int i = 0; i < guidsLength; i++)
                 {
-                    Debug.LogError($" cannot get path from GUID [{guid}]");
-                    continue;
-                }
+                    string guid = guids[i];
+                    //Debug.Log($"[{guid}]");
+                    string path = AssetDatabase.GUIDToAssetPath(guid);
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        Debug.LogError($" cannot get path from GUID [{guid}]");
+                        continue;
+                    }
 
-                // プログレスバーを表示
-                if (EditorUtility.DisplayCancelableProgressBar(
-                        "Search Missing",
-                        $"{i + 1}/{guidsLength}",
-                        (float)i / guidsLength)) { break; }
+                    // プログレスバーを表示
+                    if (EditorUtility.DisplayCancelableProgressBar(
+                            "Search Missing",
+                            $"{i + 1}/{guidsLength}",
+                            (float)i / guidsLength)) { break; }
 
-                if (extensions.Contains(Path.GetExtension(path)))
-                {
-                    SearchMissing(path);
-                    yield return null;
+                    if (extensions.Contains(Path.GetExtension(path)))
+                    {
+                        SearchMissing(path);
+                        yield return null;
+                    }
                 }
             }
-
-            // プログレスバーを消す  
-            EditorUtility.ClearProgressBar();
+            finally
+            {
+                // 例外やキャンセルでも必ずプログレスバーを消す
+                EditorUtility.ClearProgressBar();
+            }
         }
 
         /// <summary>  
@@ -354,23 +359,28 @@ namespace BxUni.MissingFinder
         {
             var assets = MissingList.Select(param => param.m_baseObj).Distinct().ToList();
 
-            int length = assets.Count;
-            for (int i = 0; i < length; i++)
+            try
             {
-                // プログレスバーを表示
-                if (EditorUtility.DisplayCancelableProgressBar(
-                        "Remove Missing",
-                        $"{i + 1}/{length}",
-                        (float)i / length)) { break; }
+                int length = assets.Count;
+                for (int i = 0; i < length; i++)
+                {
+                    // プログレスバーを表示
+                    if (EditorUtility.DisplayCancelableProgressBar(
+                            "Remove Missing",
+                            $"{i + 1}/{length}",
+                            (float)i / length)) { break; }
 
-                string path = AssetDatabase.GetAssetPath(assets[i]);
-                FixMissingReference(path);
+                    string path = AssetDatabase.GetAssetPath(assets[i]);
+                    FixMissingReference(path);
+                }
+
+                AssetDatabase.SaveAssets();
             }
-
-            AssetDatabase.SaveAssets();
-
-            // プログレスバーを消す  
-            EditorUtility.ClearProgressBar();
+            finally
+            {
+                // 例外やキャンセルでも必ずプログレスバーを消す
+                EditorUtility.ClearProgressBar();
+            }
 
             ClearResult();
         }
